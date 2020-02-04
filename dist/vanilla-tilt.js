@@ -42,6 +42,8 @@ class VanillaTilt {
     this.glarePrerender = VanillaTilt.isSettingTrue(this.settings["glare-prerender"]);
     this.fullPageListening = VanillaTilt.isSettingTrue(this.settings["full-page-listening"]);
     this.gyroscope = VanillaTilt.isSettingTrue(this.settings.gyroscope);
+    this.useTouch = VanillaTilt.isSettingTrue(this.settings.useTouch);
+    
     this.gyroscopeSamples = this.settings.gyroscopeSamples;
 
     this.elementListener = this.getElementListener();
@@ -101,6 +103,12 @@ class VanillaTilt {
     this.elementListener.addEventListener("mouseleave", this.onMouseLeaveBind);
     this.elementListener.addEventListener("mousemove", this.onMouseMoveBind);
 
+    if (this.useTouch){
+      this.elementListener.addEventListener("touchstart", this.onMouseEnterBind);
+      this.elementListener.addEventListener("touchend", this.onMouseLeaveBind);
+      this.elementListener.addEventListener("touchmove", this.onMouseMoveBind);
+    }
+
     if (this.glare || this.fullPageListening) {
       window.addEventListener("resize", this.onWindowResizeBind);
     }
@@ -117,6 +125,12 @@ class VanillaTilt {
     this.elementListener.removeEventListener("mouseenter", this.onMouseEnterBind);
     this.elementListener.removeEventListener("mouseleave", this.onMouseLeaveBind);
     this.elementListener.removeEventListener("mousemove", this.onMouseMoveBind);
+
+    if (this.useTouch){
+      this.elementListener.removeEventListener("touchstart", this.onMouseEnterBind);
+      this.elementListener.removeEventListener("touchend", this.onMouseLeaveBind);
+      this.elementListener.removeEventListener("touchmove", this.onMouseMoveBind);
+    }
 
     if (this.gyroscope) {
       window.removeEventListener("deviceorientation", this.onDeviceOrientationBind);
@@ -188,7 +202,7 @@ class VanillaTilt {
     this.updateCall = requestAnimationFrame(this.updateBind);
   }
 
-  onMouseEnter() {
+  onMouseEnter(event) {
     this.updateElementPosition();
     this.element.style.willChange = "transform";
     this.setTransition();
@@ -198,8 +212,13 @@ class VanillaTilt {
     if (this.updateCall !== null) {
       cancelAnimationFrame(this.updateCall);
     }
-
-    this.event = event;
+    if(event.touches && event.touches.length){
+      const {clientX, clientY} = event.touches[0];
+      this.event = {clientX, clientY};
+      event.preventDefault();
+    } else {
+      this.event = event;
+    }
     this.updateCall = requestAnimationFrame(this.updateBind);
   }
 
@@ -445,6 +464,7 @@ class VanillaTilt {
       "mouse-event-element": null,
       reset: true,
       gyroscope: true,
+      useTouch: false,
       gyroscopeMinAngleX: -45,
       gyroscopeMaxAngleX: 45,
       gyroscopeMinAngleY: -45,

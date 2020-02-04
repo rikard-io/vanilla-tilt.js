@@ -51,6 +51,8 @@ var VanillaTilt = function () {
     this.glarePrerender = VanillaTilt.isSettingTrue(this.settings["glare-prerender"]);
     this.fullPageListening = VanillaTilt.isSettingTrue(this.settings["full-page-listening"]);
     this.gyroscope = VanillaTilt.isSettingTrue(this.settings.gyroscope);
+    this.useTouch = VanillaTilt.isSettingTrue(this.settings.useTouch);
+
     this.gyroscopeSamples = this.settings.gyroscopeSamples;
 
     this.elementListener = this.getElementListener();
@@ -114,6 +116,12 @@ var VanillaTilt = function () {
     this.elementListener.addEventListener("mouseleave", this.onMouseLeaveBind);
     this.elementListener.addEventListener("mousemove", this.onMouseMoveBind);
 
+    if (this.useTouch) {
+      this.elementListener.addEventListener("touchstart", this.onMouseEnterBind);
+      this.elementListener.addEventListener("touchend", this.onMouseLeaveBind);
+      this.elementListener.addEventListener("touchmove", this.onMouseMoveBind);
+    }
+
     if (this.glare || this.fullPageListening) {
       window.addEventListener("resize", this.onWindowResizeBind);
     }
@@ -132,6 +140,12 @@ var VanillaTilt = function () {
     this.elementListener.removeEventListener("mouseenter", this.onMouseEnterBind);
     this.elementListener.removeEventListener("mouseleave", this.onMouseLeaveBind);
     this.elementListener.removeEventListener("mousemove", this.onMouseMoveBind);
+
+    if (this.useTouch) {
+      this.elementListener.removeEventListener("touchstart", this.onMouseEnterBind);
+      this.elementListener.removeEventListener("touchend", this.onMouseLeaveBind);
+      this.elementListener.removeEventListener("touchmove", this.onMouseMoveBind);
+    }
 
     if (this.gyroscope) {
       window.removeEventListener("deviceorientation", this.onDeviceOrientationBind);
@@ -203,7 +217,7 @@ var VanillaTilt = function () {
     this.updateCall = requestAnimationFrame(this.updateBind);
   };
 
-  VanillaTilt.prototype.onMouseEnter = function onMouseEnter() {
+  VanillaTilt.prototype.onMouseEnter = function onMouseEnter(event) {
     this.updateElementPosition();
     this.element.style.willChange = "transform";
     this.setTransition();
@@ -213,8 +227,16 @@ var VanillaTilt = function () {
     if (this.updateCall !== null) {
       cancelAnimationFrame(this.updateCall);
     }
+    if (event.touches && event.touches.length) {
+      var _event$touches$ = event.touches[0],
+          clientX = _event$touches$.clientX,
+          clientY = _event$touches$.clientY;
 
-    this.event = event;
+      this.event = { clientX: clientX, clientY: clientY };
+      event.preventDefault();
+    } else {
+      this.event = event;
+    }
     this.updateCall = requestAnimationFrame(this.updateBind);
   };
 
@@ -455,6 +477,7 @@ var VanillaTilt = function () {
       "mouse-event-element": null,
       reset: true,
       gyroscope: true,
+      useTouch: false,
       gyroscopeMinAngleX: -45,
       gyroscopeMaxAngleX: 45,
       gyroscopeMinAngleY: -45,
